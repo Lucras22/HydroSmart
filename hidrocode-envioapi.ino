@@ -1,5 +1,24 @@
-//Codigo feito por Lucas Galindo
-
+/*
+██╗     ██╗   ██╗ ██████╗ ██████╗  █████╗ ███████╗
+██║     ██║   ██║██╔═════╗██╔══██╗██╔══██╗██╔════╝
+██║     ██║   ██║██║     ║██████╔╝███████║███████╗
+██║     ██║   ██║██║     ║██╔══██╗██╔══██║╚════██║
+███████╗╚██████╔╝╚██████╔╝██║  ██║██║  ██║███████║
+╚══════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
+-----------------------------------------------------------
+📌 Autor: Lucas Galindo
+🔗 GitHub: https://github.com/Lucras22
+📧 E-mail: devlucasgalindo@email.com
+💼 LinkedIn: https://www.linkedin.com/in/lucasgalindoiot/
+-----------------------------------------------------------
+📜 Instruções de Uso:
+- 
+-----------------------------------------------------------
+📂 Repositório do Projeto:
+🔗 https://github.com/Lucras22/hidrowebnia
+-----------------------------------------------------------
+🛠️ Licença: ....
+*/
 //Estudos dos sensores:
 
 /*conversão de valores UV: https://www.usinainfo.com.br/blog/projeto-sensor-uv-guva-s12sd-com-arduino/
@@ -56,6 +75,7 @@ String url = "https://hidrowebnia-api.onrender.com/api/devices/673ddc26eb9737c99
 #define waterFlux_Pin 35
 #define relayPin  19
 #define LED_BUILTIN 2
+#define PH_SENSOR_PIN 0
 
 int waterFlux = 1;
 
@@ -67,6 +87,41 @@ int tempo = uma_hora;
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 DHT dht(DHT_PIN, DHT22);
+
+// ##############  SENSOR PH
+float calibracao_ph7 = 2.12;
+float calibracao_ph4 = 3.30;
+float calibracao_ph10 = 2.55;
+float m_4_7, b_4_7, m_7_10, b_7_10;
+
+float calcularPH(int pin) {
+  int buf[10];
+  for (int i = 0; i < 10; i++) {  
+    buf[i] = analogRead(pin);
+    delay(10);
+  }
+
+  // Ordenação e média das amostras centrais
+  for (int i = 0; i < 9; i++) {
+    for (int j = i + 1; j < 10; j++) {
+      if (buf[i] > buf[j]) {
+        int temp = buf[i];
+        buf[i] = buf[j];
+        buf[j] = temp;
+      }
+    }
+  }
+
+  int valorMedio = 0;
+  for (int i = 2; i < 8; i++) {
+    valorMedio += buf[i];
+  }
+
+  float tensao = (valorMedio * 3.3) / (4095.0 * 6);
+  float ph = (tensao < calibracao_ph7) ? (m_4_7 * tensao + b_4_7) : (m_7_10 * tensao + b_7_10);
+
+  return ph;
+}
 
 
 // Constantes para os tempos de ligar e desligar (em milissegundos)
@@ -98,6 +153,12 @@ void setup() {
     pinMode(UV_PIN, INPUT);
     pinMode(waterFlux_Pin, INPUT_PULLUP);
     pinMode(LED_BUILTIN, OUTPUT);
+
+ //Calibrando Ph
+  m_4_7 = (4.0 - 7.0) / (calibracao_ph4 - calibracao_ph7);
+  b_4_7 = 7.0 - m_4_7 * calibracao_ph7;
+  m_7_10 = (7.0 - 10.0) / (calibracao_ph7 - calibracao_ph10);
+  b_7_10 = 10.0 - m_7_10 * calibracao_ph10;
 
 
     // Inicia a tarefa para o controle do relé
@@ -152,6 +213,9 @@ void loop() {
     int second = ptm->tm_sec;
     String Date = String(day) + "/" + String(month) + "/" + String(year);
     String Time = String(hour) + ":" + String(minute) + ":" + String(second);
+
+ // Caculando o pH
+  float ph = calcularPH(PH_SENSOR_PIN);
 
     // Geração da mensagem em JSON para enviar
     String json = "{";
