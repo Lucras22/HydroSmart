@@ -75,7 +75,7 @@ String url = "https://hidrowebnia-api.onrender.com/api/devices/673ddc26eb9737c99
 #define waterFlux_Pin 35
 #define relayPin  19
 #define LED_BUILTIN 2
-#define PH_SENSOR_PIN 0
+#define PH_SENSOR_PIN 25
 
 int waterFlux = 1;
 
@@ -311,7 +311,7 @@ void loop() {
     json += "\"waterFlux\": " + String(waterFlux) + ",";
     json += "\"engineStatus\": " + String(engineStatus ? "false" : "true") + ",";
 
-    json += "\"ph\": null,";  // sem sensor de pH
+    json += "\"ph\":" + String(ph) + ",";  // sem sensor de pH
 
     json += "\"date\": \"" + Date + "\",";
     json += "\"time\": \"" + Time + "\"";
